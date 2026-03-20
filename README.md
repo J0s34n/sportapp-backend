@@ -32,7 +32,7 @@ sportapp-backend/
 ### 1. Clonar e instalar dependencias
 
 ```bash
-git clone <tu-repo>
+git clone 
 cd sportapp-backend
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
