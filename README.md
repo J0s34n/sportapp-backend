@@ -115,7 +115,7 @@ La API queda disponible en:
 Agrega este archivo para que Railway sepa el comando de inicio:
 
 ```
-# Procfile
+# ProcfileIQ
 web: uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
