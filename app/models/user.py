@@ -39,9 +39,9 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=True)   # null si usa OAuth
+    hashed_password = Column(String(255), nullable=True)
     auth_provider = Column(Enum(AuthProvider), default=AuthProvider.EMAIL)
-    provider_id = Column(String(255), nullable=True)       # ID externo de OAuth
+    provider_id = Column(String(255), nullable=True)
 
     # Perfil
     full_name = Column(String(100), nullable=True)
@@ -53,11 +53,14 @@ class User(Base):
     weight_kg = Column(Float, nullable=True)
     height_cm = Column(Float, nullable=True)
     health_condition = Column(Enum(HealthCondition), default=HealthCondition.NONE)
-    max_heart_rate = Column(Float, nullable=True)          # para alertas personalizadas
+    max_heart_rate = Column(Float, nullable=True)
 
     # Metas
     daily_steps_goal = Column(Float, default=10000)
     daily_calories_goal = Column(Float, default=500)
+
+    # Notificaciones push
+    fcm_token = Column(Text, nullable=True)
 
     # Control
     is_active = Column(Boolean, default=True)
@@ -84,14 +87,11 @@ class ActivitySession(Base):
     ended_at = Column(DateTime, nullable=True)
     duration_seconds = Column(Float, nullable=True)
 
-    # Métricas calculadas
     steps = Column(Float, default=0)
     distance_km = Column(Float, default=0)
     calories_burned = Column(Float, default=0)
     avg_speed_kmh = Column(Float, nullable=True)
-
-    # Ruta GPS (lista de puntos JSON guardada como texto)
-    gps_route = Column(Text, nullable=True)   # JSON: [{"lat":x,"lng":y,"ts":z}, ...]
+    gps_route = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
