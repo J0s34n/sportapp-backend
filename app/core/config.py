@@ -22,8 +22,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
-    # CORS — acepta "*", "url1,url2" o '["url1","url2"]'
+    # CORS
     ALLOWED_ORIGINS: List[str] = ["*"]
+
+    # Firebase Admin SDK (JSON en una sola línea)
+    FIREBASE_CREDENTIALS: str = ""
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
