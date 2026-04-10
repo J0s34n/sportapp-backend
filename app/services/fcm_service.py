@@ -105,10 +105,11 @@ class FCMService:
                         "Content-Type": "application/json",
                     },
                 )
-                return response.status_code == 200
+                if response.status_code != 200:
+                    raise Exception(f"FCM status {response.status_code}: {response.text}")
+                return True
         except Exception as e:
-            print(f"FCM error: {e}")
-            return False
+            raise Exception(f"FCM error: {e}")
 
     async def notify_goal_reached(self, fcm_token: str, goal_type: str, value: float) -> bool:
         if goal_type == "steps":
