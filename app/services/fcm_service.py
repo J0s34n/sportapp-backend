@@ -1,12 +1,11 @@
 import json
+import os
+import base64
 import httpx
 from datetime import datetime, timezone
-from app.core.config import settings
 
 
 class FCMService:
-    """Envía notificaciones push via Firebase Cloud Messaging (HTTP v1 API)."""
-
     FCM_URL = "https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
     TOKEN_URL = "https://oauth2.googleapis.com/token"
 
@@ -16,36 +15,42 @@ class FCMService:
         self._token_expiry = None
 
     def _load_credentials(self) -> dict:
-        if self._credentials is None:
-            import base64
-            from app.core.config import settings
+        if self._credentials is not None:
+            return self._credentials
 
-            # Intentar primero con base64
-            raw_b64 = getattr(settings, 'FIREBASE_CREDENTIALS_B64', '')
-            if raw_b64:
-                decoded = base64.b64decode(raw_b64).decode('utf-8')
-                self._credentials = json.loads(decoded)
-                return self._credentials
+        # Intentar FIREBASE_B64 primero (más confiable en Railway)
+        raw_b64 = os.environ.get("FIREBASE_B64", "")
+        if raw_b64:
+            decoded = base64.b64decode(raw_b64).decode("utf-8")
+            self._credentials = json.loads(decoded)
+            return self._credentials
 
-            # Fallback: JSON directo
-            raw = settings.FIREBASE_CREDENTIALS
-            if not raw:
-                raise ValueError("FIREBASE_CREDENTIALS o FIREBASE_CREDENTIALS_B64 no configurado")
+        # Fallback: FIREBASE_CREDENTIALS_B64
+        raw_b64 = os.environ.get("FIREBASE_CREDENTIALS_B64", "")
+        if raw_b64:
+            decoded = base64.b64decode(raw_b64).decode("utf-8")
+            self._credentials = json.loads(decoded)
+            return self._credentials
+
+        # Fallback: JSON directo
+        raw = os.environ.get("FIREBASE_CREDENTIALS", "")
+        if raw:
             self._credentials = json.loads(raw)
-        return self._credentials
+            return self._credentials
+
+        raise ValueError(
+            "No se encontró configuración de Firebase. "
+            "Configura FIREBASE_B64 en Railway."
+        )
 
     async def _get_access_token(self) -> str:
-        """Obtiene un access token de Google usando la service account."""
         now = datetime.now(timezone.utc).timestamp()
-
-        # Reusar token si aún es válido
         if self._access_token and self._token_expiry and now < self._token_expiry - 60:
             return self._access_token
 
-        import jwt as pyjwt  # pip install PyJWT
+        import jwt as pyjwt
         creds = self._load_credentials()
 
-        # Crear JWT firmado con la clave privada
         iat = int(now)
         exp = iat + 3600
         payload = {
@@ -57,9 +62,7 @@ class FCMService:
             "scope": "https://www.googleapis.com/auth/firebase.messaging",
         }
         signed_jwt = pyjwt.encode(
-            payload,
-            creds["private_key"],
-            algorithm="RS256",
+            payload, creds["private_key"], algorithm="RS256"
         )
 
         async with httpx.AsyncClient() as client:
@@ -76,14 +79,7 @@ class FCMService:
 
         return self._access_token
 
-    async def send(
-        self,
-        fcm_token: str,
-        title: str,
-        body: str,
-        data: dict | None = None,
-    ) -> bool:
-        """Envía una notificación a un dispositivo específico."""
+    async def send(self, fcm_token: str, title: str, body: str, data: dict | None = None) -> bool:
         try:
             creds = self._load_credentials()
             access_token = await self._get_access_token()
@@ -94,10 +90,7 @@ class FCMService:
                     "token": fcm_token,
                     "notification": {"title": title, "body": body},
                     "android": {
-                        "notification": {
-                            "sound": "default",
-                            "priority": "HIGH",
-                        }
+                        "notification": {"sound": "default", "priority": "HIGH"}
                     },
                     **({"data": {k: str(v) for k, v in data.items()}} if data else {}),
                 }
@@ -117,11 +110,7 @@ class FCMService:
             print(f"FCM error: {e}")
             return False
 
-    # ── Tipos de notificación específicos ─────────────────
-
-    async def notify_goal_reached(
-        self, fcm_token: str, goal_type: str, value: float
-    ) -> bool:
+    async def notify_goal_reached(self, fcm_token: str, goal_type: str, value: float) -> bool:
         if goal_type == "steps":
             return await self.send(
                 fcm_token,
@@ -146,9 +135,7 @@ class FCMService:
             data={"type": "reminder"},
         )
 
-    async def notify_health_alert(
-        self, fcm_token: str, message: str
-    ) -> bool:
+    async def notify_health_alert(self, fcm_token: str, message: str) -> bool:
         return await self.send(
             fcm_token,
             title="Alerta de salud ⚠️",
@@ -157,5 +144,4 @@ class FCMService:
         )
 
 
-# Singleton
 fcm_service = FCMService()

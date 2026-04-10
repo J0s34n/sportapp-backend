@@ -85,11 +85,11 @@ async def check_and_notify_goals(user: User, summary: dict):
 
 @router.get("/debug-config")
 def debug_config():
-    from app.core.config import settings
-    creds = settings.FIREBASE_CREDENTIALS
+    import os
+    b64 = os.environ.get("FIREBASE_B64", "EMPTY")
+    b64_long = os.environ.get("FIREBASE_CREDENTIALS_B64", "EMPTY")
     return {
-        "has_credentials": bool(creds),
-        "length": len(creds),
-        "first_20_chars": creds[:20] if creds else "EMPTY",
-        "starts_with_brace": creds.startswith("{") if creds else False,
+        "FIREBASE_B64": {"length": len(b64), "first_10": b64[:10]},
+        "FIREBASE_CREDENTIALS_B64": {"length": len(b64_long), "first_10": b64_long[:10]},
+        "all_firebase_keys": [k for k in os.environ if "FIREBASE" in k],
     }
