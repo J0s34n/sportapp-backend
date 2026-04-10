@@ -17,11 +17,21 @@ class FCMService:
 
     def _load_credentials(self) -> dict:
         if self._credentials is None:
+            import base64
+            from app.core.config import settings
+
+            # Intentar primero con base64
+            raw_b64 = getattr(settings, 'FIREBASE_CREDENTIALS_B64', '')
+            if raw_b64:
+                decoded = base64.b64decode(raw_b64).decode('utf-8')
+                self._credentials = json.loads(decoded)
+                return self._credentials
+
+            # Fallback: JSON directo
             raw = settings.FIREBASE_CREDENTIALS
-            if isinstance(raw, str):
-                self._credentials = json.loads(raw)
-            else:
-                self._credentials = raw
+            if not raw:
+                raise ValueError("FIREBASE_CREDENTIALS o FIREBASE_CREDENTIALS_B64 no configurado")
+            self._credentials = json.loads(raw)
         return self._credentials
 
     async def _get_access_token(self) -> str:

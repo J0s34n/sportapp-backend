@@ -25,8 +25,9 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: List[str] = ["*"]
 
-    # Firebase Admin SDK (JSON en una sola línea)
+    # Firebase Admin SDK
     FIREBASE_CREDENTIALS: str = ""
+    FIREBASE_CREDENTIALS_B64: str = ""  # alternativa en base64 (recomendada)
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
