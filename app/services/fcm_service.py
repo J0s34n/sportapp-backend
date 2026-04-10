@@ -90,7 +90,8 @@ class FCMService:
                     "token": fcm_token,
                     "notification": {"title": title, "body": body},
                     "android": {
-                        "notification": {"sound": "default", "priority": "HIGH"}
+                        "priority": "HIGH",
+                        "notification": {"sound": "default"},
                     },
                     **({"data": {k: str(v) for k, v in data.items()}} if data else {}),
                 }
