@@ -82,3 +82,14 @@ async def check_and_notify_goals(user: User, summary: dict):
         await fcm_service.notify_goal_reached(
             user.fcm_token, "calories", summary["total_calories"]
         )
+
+@router.get("/debug-config")
+def debug_config():
+    from app.core.config import settings
+    creds = settings.FIREBASE_CREDENTIALS
+    return {
+        "has_credentials": bool(creds),
+        "length": len(creds),
+        "first_20_chars": creds[:20] if creds else "EMPTY",
+        "starts_with_brace": creds.startswith("{") if creds else False,
+    }
