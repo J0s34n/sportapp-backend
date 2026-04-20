@@ -11,6 +11,7 @@ from app.schemas.activity import (
     ActivitySessionResponse, DailySummary
 )
 from app.core.dependencies import get_current_user
+from app.api.v1.endpoints.notifications import check_and_notify_goals
 
 router = APIRouter(prefix="/activity", tags=["Actividad física"])
 
@@ -44,7 +45,7 @@ def start_session(
 # ── Finalizar sesión ───────────────────────────────────────
 
 @router.patch("/sessions/{session_id}", response_model=ActivitySessionResponse)
-def end_session(
+async def end_session(
     session_id: str,
     body: ActivitySessionEnd,
     db: Session = Depends(get_db),
@@ -78,6 +79,16 @@ def end_session(
 
     db.commit()
     db.refresh(session)
+
+    # Verificar metas y notificar si se cumplieron
+    summary = _build_summary(db, current_user, ended_at_naive.date())
+    await check_and_notify_goals(current_user, {
+        'steps_progress_pct':    summary.steps_progress_pct,
+        'calories_progress_pct': summary.calories_progress_pct,
+        'total_steps':           summary.total_steps,
+        'total_calories':        summary.total_calories,
+    })
+
     return session
 
 
